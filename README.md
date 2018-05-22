@@ -1,2 +1,2 @@
 # ProgrammingProjects
-School or work projects for computer science
+School or projects for computer science
