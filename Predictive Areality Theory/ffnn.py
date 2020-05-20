@@ -57,10 +57,7 @@ def train_on_data(hidden_dim, number_of_epochs):
 	num_features = len(feature_index_lookup)
 	data_list = list(feature_data.keys())
 	data_length = len(data_list)
-	training_cutoff = round(0.9 * data_length)
 	print("Vectorized data: {} languages, {} features".format(data_length, num_features))
-	print("Training set: {} languages".format(training_cutoff))
-	print("Validation set: {} languages".format(data_length - training_cutoff))
 
 	#Create a model for each feature
 	all_models = []
@@ -77,19 +74,33 @@ def train_on_data(hidden_dim, number_of_epochs):
 	print("Training {} models for {} epochs".format(len(all_models), number_of_epochs))
 	for i in range(num_features):
 		model, optimizer = all_models[i]
+		print("Creating training and validation sets for feature {}".format(i))
+		proper_examples = []
+		for j in data_list:
+			if feature_data[j][i] != 0:
+				proper_examples.append(j)
+		num_proper = len(proper_examples)
+		if num_proper < 300:
+			print("Omitting feature {}: not enough data".format(i))
+			continue
+		random.shuffle(proper_examples)
+		train_data = proper_examples[:round(0.9 * num_proper)]
+		valid_data = proper_examples[round(0.9 * num_proper):]
+		assert(len(train_data) + len(valid_data) == num_proper)
+		assert(len(train_data) > len(valid_data))
+		print("Training and validation sets created")
+
 		print("Training started for model {}".format(i + 1))
 		for epoch in range(number_of_epochs):
 			model.train()
 			optimizer.zero_grad()
 			total_loss = 0
 			loss = 0
-			correct = 0
-			total = 0
+			tcorrect = 0
+			ttotal = 0
 			start_time = time.time()
 			print("Training started for epoch {}".format(epoch + 1))
-			train_data = data_list[:training_cutoff]
-			random.shuffle(train_data) # Good practice to shuffle order of training data
-			minibatch_size = 16 
+			minibatch_size = 8
 			N = len(train_data)
 			for minibatch_index in tqdm(range(N // minibatch_size)):
 				optimizer.zero_grad()
@@ -107,8 +118,8 @@ def train_on_data(hidden_dim, number_of_epochs):
 
 					predicted_vector = model(input_vector)
 					predicted_label = torch.argmax(predicted_vector)
-					correct += int(predicted_label == gold_label)
-					total += 1
+					tcorrect += int(predicted_label == gold_label)
+					ttotal += 1
 					example_loss = model.compute_Loss(predicted_vector.view(1,-1), torch.tensor([gold_label], dtype=torch.long))
 					total_loss += example_loss
 					if loss is None:
@@ -119,17 +130,15 @@ def train_on_data(hidden_dim, number_of_epochs):
 				loss.backward()
 				optimizer.step()
 			print("Training completed for epoch {}".format(epoch + 1))
-			print("Training accuracy for epoch {}: {}".format(epoch + 1, correct / total))
+			print("Training accuracy for epoch {}: {}".format(epoch + 1, tcorrect / ttotal))
 			print("Average loss for epoch {}: {}".format(epoch + 1, total_loss / N))
 			print("Training time for this epoch: {}".format(time.time() - start_time))
 			model.train(mode=False)
 			#loss = 0
-			correct = 0
-			total = 0
+			vcorrect = 0
+			vtotal = 0
 			start_time = time.time()
 			print("Validation started for epoch {}".format(epoch + 1))
-			valid_data = data_list[training_cutoff:]
-			random.shuffle(valid_data) # Good practice to shuffle order of valid data
 			for j in range(len(valid_data)):
 				#Form validation example
 				example_language = valid_data[j]
@@ -143,28 +152,47 @@ def train_on_data(hidden_dim, number_of_epochs):
 
 				predicted_vector = model(input_vector)
 				predicted_label = torch.argmax(predicted_vector)
-				correct += int(predicted_label == gold_label)
-				total += 1
+				vcorrect += int(predicted_label == gold_label)
+				vtotal += 1
 
 			print("Validation completed for epoch {}".format(epoch + 1))
-			print("Validation accuracy for epoch {}: {}".format(epoch + 1, correct / total))
+			print("Validation accuracy for epoch {}: {}".format(epoch + 1, vcorrect / vtotal))
 			print("Validation time for this epoch: {}".format(time.time() - start_time))
 
 			if epoch == number_of_epochs - 1:
-				model_accuracy[i] = correct / total
+				model_accuracy[i] = (tcorrect / ttotal + vcorrect / vtotal) / 2
 	pickle.dump(all_models, open(pj + "trained_models.pickle", 'wb'))
 	pickle.dump(model_accuracy, open(pj + "model_accuracy.pickle", 'wb'))
 	return model_accuracy
 
-train_on_data(128, 10)
+if __name__ == "__main__":
+	avg_acc = 0
+	while avg_acc < 0.48:
+		accuracies = train_on_data(16, 6)
+		num_usable = 0
+		for i in accuracies:
+			if i != 0:
+				num_usable += 1
+		avg_acc = sum(accuracies) / num_usable
+		print("Average model accuracy: {}".format(avg_acc))
+		print("Highest accuracy: {}".format(max(accuracies)))
 """
 #Fine-tuning on hidden layer size
 layer_sizes = [16, 32, 64, 128, 256]
-accuracy_by_size = [0 for i in layer_sizes]
+epochs = [6, 8, 10]
+accuracy_by_size = [[0 for j in epochs] for i in layer_sizes]
 for i in range(5):
-	results = train_on_data(layer_sizes[i], 10)
-	accuracy_by_size[i] = sum(results)/len(results)
-best = layer_sizes[accuracy_by_size.index(max(accuracy_by_size))]
-print("Best layer size is {}".format(best))
+	for j in range(3):
+		results = train_on_data(layer_sizes[i], epochs[j])
+		accuracy_by_size[i][j] = sum(results)/len(results)
+best = (0, 0)
+best_accuracy = 0
+for i in range(5):
+	for j in range(3):
+		if accuracy_by_size[i][j] > best_accuracy:
+			best_accuracy = accuracy_by_size[i][j]
+			best = (i, j)
+print("Best layer size is {}".format(layer_sizes[best[0]]))
+print("Best number of epochs is {}".format(epochs[best[1]]))
 #RESULTS: 128 has the best average accuracy
 """
