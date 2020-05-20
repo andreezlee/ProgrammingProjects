@@ -20,11 +20,11 @@ For each network, the example set was formed with each language with the documen
 
 The training set would be a randomized 90% of the example set, with the validation set being the other 10%. Features were deemed unusable if there were less than 300 data points or if training the neural network led to accuracy reaching 0. Accuracy for determining each neural network's performance was an average of the training and validation accuracies on the final training epoch. Fine-tuning on metaparameters produced these results, with the models and their data stored as ```.pickle``` files as well: (Note: using the ```pickle``` library to store PyTorch structures might soon be deprecated.)
 
-..* Highest performing hidden layer size: 16 nodes
-..* Highest performing number of epochs: 6 epochs
-..* Usable features: 68 features
-..* Average model accuracy measure: 49.25%
-..* Highest model accuracy measure: 99.58%
+* Highest performing hidden layer size: 16 nodes
+* Highest performing number of epochs: 6 epochs
+* Usable features: 68 features
+* Average model accuracy measure: 49.25%
+* Highest model accuracy measure: 99.58%
 
 Your mileage may vary. Please refer to the proper file comments for code specifics.
 
