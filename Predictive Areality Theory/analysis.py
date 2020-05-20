@@ -5,10 +5,17 @@ from random import seed, random, randint
 from shared import pj
 from ffnn import FFNN
 
-silk_road = [(50, [31, 40, 35, 95])]
+"""
+	Readied values for each region, list of tuples ordered by 
+	(number of random points, [latitude bounds, longitude bounds])
+"""
 balkans = [(50, [37, 46, 18, 27])]
 pacific_rim = [(50, [-60, 60, 120, 180]), (25, [20, 60,-180, -100]), (25, [-60, 0, -180, -60])]
 
+"""
+	Outputs the list of indices of the features/networks with the
+	highest model accuracies, in descending order.
+"""
 def most_accurate_features():
 	with open(pj + "feature_index.pickle", 'rb') as file:
 		feature_index_lookup = pickle.load(file)
@@ -16,6 +23,7 @@ def most_accurate_features():
 		feature_name_lookup = pickle.load(file)
 	with open(pj + "model_accuracy.pickle", 'rb') as file:
 		model_accuracies = pickle.load(file)
+	print("Usable features: {}".format(len(model_accuracies) - list(model_accuracies).count(0)))
 	most_accurate_results = sorted(range(len(model_accuracies)), key=lambda i: model_accuracies[i])[-50:]
 
 	for i in most_accurate_results:
@@ -26,6 +34,10 @@ def most_accurate_features():
 
 	return most_accurate_results
 
+"""
+	Given the list of feature indices, runs the models for the specified features
+	on random points in defined areas, outputting all predictions for each feature.
+"""
 def run_on_features(features):
 	seed(randint(0, 10))
 	locations = []
@@ -51,6 +63,10 @@ def run_on_features(features):
 
 	return results
 
+"""
+	Parses through the [results] data structure to print out all the proper
+	results: feature names, values, distributions, etc.
+"""
 def manage_results(results):
 
 	with open(pj + "feature_index.pickle", 'rb') as file:

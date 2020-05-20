@@ -10,6 +10,9 @@ import time
 from tqdm import tqdm
 from shared import pj
 
+"""
+	Very simple feed forward neural network class
+"""
 class FFNN(nn.Module):
 	def __init__(self, input_dim, output_dim, h):
 			super(FFNN, self).__init__()
@@ -17,22 +20,22 @@ class FFNN(nn.Module):
 			self.W1 = nn.Linear(input_dim, h)
 			self.activation = nn.ReLU()
 			self.W2 = nn.Linear(h, output_dim)
-			# The below two lines are not a source for an error
-			self.softmax = nn.LogSoftmax(dim=0) # The softmax function that converts vectors into probability distributions; computes log probabilities for computational benefits
-			self.loss = nn.NLLLoss() # The cross-entropy/negative log likelihood loss taught in class
+			self.softmax = nn.LogSoftmax(dim=0)
+			self.loss = nn.NLLLoss()
 
 	def compute_Loss(self, predicted_vector, gold_label):
 		return self.loss(predicted_vector, gold_label)
 
 	def forward(self, input_vector):
 		input_vector = torch.from_numpy(input_vector).float()
-		# The z_i are just there to record intermediary computations for your clarity
 		z1 = self.W1(input_vector)
 		z2 = self.W2(self.activation(z1))
 		predicted_vector = self.softmax(z2)
 		return predicted_vector
 
-
+"""
+	Given metaparameters, trains the neural network on the data.
+"""
 def train_on_data(hidden_dim, number_of_epochs):
 	print("Fetching data")
 	#Load pickle files
@@ -165,6 +168,9 @@ def train_on_data(hidden_dim, number_of_epochs):
 	pickle.dump(model_accuracy, open(pj + "model_accuracy.pickle", 'wb'))
 	return model_accuracy
 
+"""
+	This creates and trains models according to my fine-tuning
+"""
 if __name__ == "__main__":
 	avg_acc = 0
 	while avg_acc < 0.48:
@@ -177,7 +183,7 @@ if __name__ == "__main__":
 		print("Average model accuracy: {}".format(avg_acc))
 		print("Highest accuracy: {}".format(max(accuracies)))
 """
-#Fine-tuning on hidden layer size
+#Fine-tuning on hidden layer size and number of epochs
 layer_sizes = [16, 32, 64, 128, 256]
 epochs = [6, 8, 10]
 accuracy_by_size = [[0 for j in epochs] for i in layer_sizes]
@@ -194,5 +200,5 @@ for i in range(5):
 			best = (i, j)
 print("Best layer size is {}".format(layer_sizes[best[0]]))
 print("Best number of epochs is {}".format(epochs[best[1]]))
-#RESULTS: 128 has the best average accuracy
+#RESULTS: hidden layer of 16 on 6 epochs
 """
