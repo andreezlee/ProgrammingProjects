@@ -1,5 +1,7 @@
 import os
 
+# Metavariables used in multiple files
+
 dbf = os.path.join(os.getcwd(), "database_files/")
 pj = os.path.join(os.getcwd(), "picklejar/")
 
